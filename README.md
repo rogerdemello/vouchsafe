@@ -91,7 +91,7 @@ Vouchsafe is a **local-first classification service** with three faces: a **CLI*
 It reads any transaction workbook, works out whose books it is looking at, turns each row into an **evidence card**, and classifies it through a **two-tier cascade**: a fast calibrated model for clear-cut rows and an **open-SLM reasoning agent** for everything else. Every output carries a voucher type, a calibrated confidence, the six-axis reasoning behind it, the source fields it relied on, and a review flag.
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/76c92437-d112-4611-b733-50779d283b8b" alt="System overview" width="100%">
+  <img src="https://github.com/user-attachments/assets/7b8881b7-3663-4dc2-8a39-731df4125330" alt="System overview" width="100%">
 </p>
 
 ---
@@ -116,7 +116,7 @@ The 27 categories are not 27 unrelated things. Each is a point on a small set of
 The SLM answers the six axes from evidence. A **deterministic decision table** maps the answers to a label. The model also gives its own direct label, so every row gets **two independent readings**. When they agree, confidence is high. When they disagree, the agent knows exactly which axis to re-examine.
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/9f7296e0-a022-499b-ae4a-3ead2f98f4ff" alt="Voucher Algebra decision tree for all 27 voucher types" width="858">
+  <img src="https://github.com/user-attachments/assets/75cba022-1771-4440-a89b-75e67605b969" alt="Voucher Algebra decision tree for all 27 voucher types" width="858">
 </p>
 
 <details>
@@ -187,7 +187,7 @@ Why this works better than a flat 27-way prompt:
 Half of the confusable pairs flip on a single fact: is the reporting entity the buyer or the seller? Vouchsafe settles that **once per dataset**, before any row is classified.
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/87dfde7a-ec58-49fb-b924-c7754c06e20d" alt="Perspective resolution flow" width="700">
+  <img src="https://github.com/user-attachments/assets/04f75b52-b78d-4459-9e56-5a607296ec12" alt="Perspective resolution flow" width="700">
 </p>
 
 GSTIN structure helps here: the first two digits are the state code and the next ten are the PAN. Two GSTINs sharing a PAN belong to one legal entity, which marks branch transfers rather than true purchases or sales. State codes also tell intra-state supplies (CGST + SGST) from inter-state ones (IGST), which the verifier cross-checks against the tax columns.
@@ -333,13 +333,13 @@ Both runtimes expose the same OpenAI-compatible HTTP interface, so the model is 
 ## 10. System Architecture
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/5739b493-04ec-4749-a45e-7ed56f2f3102" alt="System architecture" width="1037">
+  <img src="https://github.com/user-attachments/assets/2d5d83b6-2834-4de4-8367-bf3519427f2b" alt="System architecture" width="1037">
 </p>
 
 **Deployment view.** One `docker compose up`, no internet required after the model weights are pulled.
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/23879bff-ca59-41c9-a50a-26e47d1ae044" alt="Deployment view" width="100%">
+  <img src="https://github.com/user-attachments/assets/bf28c28f-40a8-4622-93e9-8ee95b58f9b2" alt="Deployment view" width="100%">
 </p>
 
 ---
@@ -411,7 +411,7 @@ Both runtimes expose the same OpenAI-compatible HTTP interface, so the model is 
 **Runtime flow, with the data artifact each stage produces**
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/86a80988-f651-4fd7-990f-7babdd3d4094" alt="Runtime data flow" width="390">
+  <img src="https://github.com/user-attachments/assets/9a51e7d7-fe9e-491c-b18d-6a06aa3f91cf" alt="Runtime data flow" width="390">
 </p>
 
 Only the evidence card, the narration and linked-row summaries reach the model, never the whole workbook. That keeps prompts short (a few hundred tokens per row) and keeps unrelated personal data out of the model's context.
@@ -421,7 +421,7 @@ Only the evidence card, the narration and linked-row summaries reach the model, 
 The dataset arrives unlabeled, so Vouchsafe manufactures its own training signal and keeps a small, hand-labeled gold set strictly for measurement.
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/f0ad2cf3-ea91-4263-b85c-68ce7e60a89c" alt="Learning flow: bootstrapping without labels" width="100%">
+  <img src="https://github.com/user-attachments/assets/e5e5a371-9053-487f-b3b0-6c475c188cc4" alt="Learning flow: bootstrapping without labels" width="100%">
 </p>
 
 Synthetic data is generated from the same decision table the classifier uses, so scoring the system on it would be circular. It is used only for rare-class coverage and robustness testing. **Headline numbers come from the hand-labeled gold test split, drawn from the real dataset.**
@@ -433,7 +433,7 @@ Synthetic data is generated from the same decision table the classifier uses, so
 Only escalated rows enter the agent. It is a **bounded LangGraph state machine**, not an open-ended loop: at most two reasoning rounds and four tool calls per row, and every step is traced into the audit log.
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/2f72458f-9bb0-4e66-a660-8563d11bbdf2" alt="Agentic workflow for escalated rows" width="691">
+  <img src="https://github.com/user-attachments/assets/caa9a5c7-d981-4fb9-8fcd-cdcbf35b607a" alt="Agentic workflow for escalated rows" width="691">
 </p>
 
 **Tools available to the agent** (all read-only and deterministic)
@@ -502,7 +502,7 @@ Only escalated rows enter the agent. It is a **bounded LangGraph state machine**
 The plan is ordered so that **a complete, working classifier exists by Phase 2**. Every later phase adds accuracy, speed or product polish on top of something that already runs end to end.
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/882562c6-bdba-435e-84b2-43165e99c356" alt="Implementation phases" width="100%">
+  <img src="https://github.com/user-attachments/assets/56ee6166-bf48-4e6e-b4f2-f6ab094fd946" alt="Implementation phases" width="100%">
 </p>
 
 | Phase | Deliverable | Demo-able checkpoint |
@@ -590,7 +590,7 @@ docker compose up    # API on :8000, review console on :8501
 ## 18. Future Scope / Scalability
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/9dc59add-c45c-4c3c-9490-af31c494bec4" alt="Scalability architecture" width="100%">
+  <img src="https://github.com/user-attachments/assets/783b0685-5474-4837-8aa1-2ea97740628e" alt="Scalability architecture" width="100%">
 </p>
 
 **Scaling.** The API is stateless, so it scales horizontally. The fast tier runs on cheap CPU workers, and only escalations reach the GPU pool, where vLLM batches requests and reuses the shared prompt prefix. Per-tenant exemplar memory lets each client firm's conventions apply without retraining.
