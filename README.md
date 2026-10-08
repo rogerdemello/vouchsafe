@@ -90,30 +90,9 @@ Vouchsafe is a **local-first classification service** with three faces: a **CLI*
 
 It reads any transaction workbook, works out whose books it is looking at, turns each row into an **evidence card**, and classifies it through a **two-tier cascade**: a fast calibrated model for clear-cut rows and an **open-SLM reasoning agent** for everything else. Every output carries a voucher type, a calibrated confidence, the six-axis reasoning behind it, the source fields it relied on, and a review flag.
 
-```mermaid
-%%{init: {"look": "handDrawn", "handDrawnSeed": 4, "fontFamily": "virgil, excalifont, segoe print, bradley hand, chalkboard se, comic sans ms, cursive"}}%%
-flowchart LR
-  X[/"Transactions workbook<br/>.xlsx or .csv"/]:::orange --> I["Ingest<br/>load, map columns, normalize"]:::blue
-  I --> P["Resolve perspective<br/>whose books?"]:::violet
-  P --> E["Build evidence cards<br/>signals, links, missing fields"]:::violet
-  E --> F["Fast tier<br/>kNN + LightGBM"]:::green
-  F --> G{"Confident<br/>and consistent?"}
-  G -->|"yes"| V["Verifier"]:::red
-  G -->|"no"| A["SLM reasoning agent<br/>six-axis reasoning + tools"]:::yellow
-  A --> V
-  V --> O[/"voucher type, confidence,<br/>axes, evidence, explanation"/]:::cyan
-  O --> R["Review console<br/>accountant corrections"]:::pink
-  R -.->|"new exemplars"| F
-
-  classDef blue fill:#a5d8ff,stroke:#1971c2,color:#1e1e1e
-  classDef violet fill:#d0bfff,stroke:#6741d9,color:#1e1e1e
-  classDef yellow fill:#ffec99,stroke:#f08c00,color:#1e1e1e
-  classDef green fill:#b2f2bb,stroke:#2f9e44,color:#1e1e1e
-  classDef red fill:#ffc9c9,stroke:#e03131,color:#1e1e1e
-  classDef cyan fill:#99e9f2,stroke:#0c8599,color:#1e1e1e
-  classDef orange fill:#ffd8a8,stroke:#e8590c,color:#1e1e1e
-  classDef pink fill:#fcc2d7,stroke:#c2255c,color:#1e1e1e
-```
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/76c92437-d112-4611-b733-50779d283b8b" alt="System overview" width="100%">
+</p>
 
 ---
 
@@ -136,72 +115,9 @@ The 27 categories are not 27 unrelated things. Each is a point on a small set of
 
 The SLM answers the six axes from evidence. A **deterministic decision table** maps the answers to a label. The model also gives its own direct label, so every row gets **two independent readings**. When they agree, confidence is high. When they disagree, the agent knows exactly which axis to re-examine.
 
-```mermaid
-%%{init: {"look": "handDrawn", "handDrawnSeed": 4, "fontFamily": "virgil, excalifont, segoe print, bradley hand, chalkboard se, comic sans ms, cursive"}}%%
-flowchart LR
-  R(["Transaction row<br/>+ evidence card"]) --> S{"Stage?"}
-
-  S -->|"BILL"| B1{"Border?"}
-  B1 -->|"cross-border"| B2{"Direction?"}
-  B2 -->|"IN"| IMP(["Import"]):::trade
-  B2 -->|"OUT"| EXP(["Export"]):::trade
-  B1 -->|"domestic"| B3{"Direction?"}
-  B3 -->|"OUT"| SAL(["Sales"]):::trade
-  B3 -->|"IN"| B4{"Goods or service?"}
-  B4 -->|"stock goods"| PUR(["Purchase"]):::trade
-  B4 -->|"service or overhead"| EXPN(["Expense"]):::trade
-
-  S -->|"RETURN"| R1{"Value?"}
-  R1 -->|"financial"| R2{"Direction?"}
-  R2 -->|"OUT to supplier"| DN(["Purchase Return /<br/>Debit Note"]):::ret
-  R2 -->|"IN from customer"| CN(["Sales Return /<br/>Credit Note"]):::ret
-  R1 -->|"quantity only"| R3{"Direction?"}
-  R3 -->|"OUT"| RJO(["Rejection Out"]):::ret
-  R3 -->|"IN"| RJI(["Rejection In"]):::ret
-
-  S -->|"ORDER"| O1{"Counterparty?"}
-  O1 -->|"trade party"| O2{"Direction?"}
-  O2 -->|"IN"| PO(["Purchase Order"]):::ord
-  O2 -->|"OUT"| SO(["Sales Order"]):::ord
-  O1 -->|"job work party"| O3{"Direction?"}
-  O3 -->|"OUT"| JWO(["Job Work Out Order"]):::ord
-  O3 -->|"IN"| JWI(["Job Work In Order"]):::ord
-
-  S -->|"MOVEMENT"| M1{"Counterparty?"}
-  M1 -->|"trade party"| M2{"Direction?"}
-  M2 -->|"IN"| RN(["Receipt Note"]):::inv
-  M2 -->|"OUT"| DLN(["Delivery Note"]):::inv
-  M1 -->|"job work party"| M3{"Direction?"}
-  M3 -->|"OUT"| MO(["Material Out"]):::inv
-  M3 -->|"IN"| MI(["Material In"]):::inv
-
-  S -->|"STOCK"| K1{"Transfer or count?"}
-  K1 -->|"transfer or conversion"| SJ(["Stock Journal"]):::inv
-  K1 -->|"count or verification"| PS(["Physical Stock"]):::inv
-
-  S -->|"SETTLEMENT"| T1{"Counterparty?"}
-  T1 -->|"own cash or bank"| CON(["Contra"]):::cash
-  T1 -->|"external party"| T2{"Before any bill?"}
-  T2 -->|"yes"| ADV(["Advance /<br/>Prepayment"]):::cash
-  T2 -->|"no"| T3{"Direction?"}
-  T3 -->|"OUT"| PAY(["Payment"]):::cash
-  T3 -->|"IN"| REC(["Receipt"]):::cash
-
-  S -->|"ADJUSTMENT"| JRN(["Journal"]):::adj
-  S -->|"HR"| H1{"Value?"}
-  H1 -->|"money"| SALR(["Salary / Payroll"]):::hr
-  H1 -->|"time"| ATT(["Attendance"]):::hr
-  S -->|"nothing fits"| OTH(["Other /<br/>Miscellaneous"]):::oth
-
-  classDef trade fill:#a5d8ff,stroke:#1971c2,color:#1e1e1e
-  classDef ret fill:#ffc9c9,stroke:#e03131,color:#1e1e1e
-  classDef ord fill:#d0bfff,stroke:#6741d9,color:#1e1e1e
-  classDef inv fill:#b2f2bb,stroke:#2f9e44,color:#1e1e1e
-  classDef cash fill:#ffec99,stroke:#f08c00,color:#1e1e1e
-  classDef adj fill:#ffd8a8,stroke:#e8590c,color:#1e1e1e
-  classDef hr fill:#fcc2d7,stroke:#c2255c,color:#1e1e1e
-  classDef oth fill:#e9ecef,stroke:#868e96,color:#1e1e1e
-```
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/9f7296e0-a022-499b-ae4a-3ead2f98f4ff" alt="Voucher Algebra decision tree for all 27 voucher types" width="858">
+</p>
 
 <details>
 <summary><b>Full axis signature of all 27 voucher types</b> (click to expand)</summary>
@@ -270,23 +186,9 @@ Why this works better than a flat 27-way prompt:
 
 Half of the confusable pairs flip on a single fact: is the reporting entity the buyer or the seller? Vouchsafe settles that **once per dataset**, before any row is classified.
 
-```mermaid
-%%{init: {"look": "handDrawn", "handDrawnSeed": 4, "fontFamily": "virgil, excalifont, segoe print, bradley hand, chalkboard se, comic sans ms, cursive"}}%%
-flowchart TB
-  A{"Books owner given<br/>in config?"} -->|"yes"| CFG["Use configured<br/>GSTIN or name"]:::violet
-  A -->|"no"| B["Cluster party names and GSTINs<br/>across every row<br/>(normalized, fuzzy-matched, same-PAN aware)"]:::blue
-  B --> C{"One entity appears in<br/>a clear majority of rows?"}
-  C -->|"yes"| ANC["Anchor = that entity<br/>role per row: buyer, seller,<br/>both (internal) or neither"]:::violet
-  C -->|"no"| D["Row-level cues<br/>filled column roles, document title,<br/>Bill-to and Ship-to fields, Dr/Cr side"]:::yellow
-  CFG --> OUTP[/"books_of, role_in_row,<br/>perspective confidence"/]:::cyan
-  ANC --> OUTP
-  D --> OUTP
-
-  classDef blue fill:#a5d8ff,stroke:#1971c2,color:#1e1e1e
-  classDef violet fill:#d0bfff,stroke:#6741d9,color:#1e1e1e
-  classDef yellow fill:#ffec99,stroke:#f08c00,color:#1e1e1e
-  classDef cyan fill:#99e9f2,stroke:#0c8599,color:#1e1e1e
-```
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/87dfde7a-ec58-49fb-b924-c7754c06e20d" alt="Perspective resolution flow" width="700">
+</p>
 
 GSTIN structure helps here: the first two digits are the state code and the next ten are the PAN. Two GSTINs sharing a PAN belong to one legal entity, which marks branch transfers rather than true purchases or sales. State codes also tell intra-state supplies (CGST + SGST) from inter-state ones (IGST), which the verifier cross-checks against the tax columns.
 
@@ -430,111 +332,15 @@ Both runtimes expose the same OpenAI-compatible HTTP interface, so the model is 
 
 ## 10. System Architecture
 
-```mermaid
-%%{init: {"look": "handDrawn", "handDrawnSeed": 4, "fontFamily": "virgil, excalifont, segoe print, bradley hand, chalkboard se, comic sans ms, cursive"}}%%
-flowchart TB
-  subgraph IF["Interfaces"]
-    CLI["CLI<br/>batch + eval"]:::cyan
-    API["FastAPI<br/>/v1/classify"]:::cyan
-    UI["Streamlit<br/>review console"]:::pink
-  end
-
-  subgraph ING["Ingestion layer"]
-    LD["Workbook Loader<br/>xlsx / csv, multi-sheet"]:::blue
-    SM["Schema Mapper<br/>synonyms, fuzzy match,<br/>embeddings, SLM fallback"]:::blue
-    NM["Normalizer<br/>amounts, dates, GSTIN, currency"]:::blue
-  end
-
-  subgraph UND["Understanding layer"]
-    PR["Perspective Resolver<br/>whose books?"]:::violet
-    EX["Evidence Extractor<br/>about 40 signals + missing mask"]:::violet
-    TG["Transaction Graph<br/>order, GRN, bill, payment, return links"]:::violet
-  end
-
-  subgraph CLS["Classification layer"]
-    FT["Fast Tier<br/>kNN + LightGBM, calibrated"]:::green
-    GT{"Confidence gate"}
-    AG["Reasoning Agent<br/>LangGraph"]:::yellow
-    VF["Verifier<br/>hard constraints + axis algebra"]:::red
-  end
-
-  subgraph KN["Knowledge"]
-    RB[("Voucher Rulebook<br/>27 cards + decision table")]:::orange
-    MEM[("Exemplar Memory<br/>FAISS")]:::orange
-  end
-
-  subgraph MS["Local model serving, offline"]
-    LLM["Open SLM<br/>Qwen3.5-9B via llama.cpp or vLLM"]:::yellow
-    EMB["Embedding model<br/>multilingual-e5-small"]:::yellow
-  end
-
-  subgraph OUT["Outputs"]
-    J[/"predictions.json and .xlsx"/]:::cyan
-    AU[/"audit.jsonl"/]:::cyan
-    RP[/"evaluation report"/]:::cyan
-  end
-
-  CLI --> LD
-  API --> LD
-  UI --> LD
-  LD --> SM --> NM
-  NM --> PR --> EX
-  NM --> TG
-  EX --> FT --> GT
-  GT -->|"confident"| VF
-  GT -->|"uncertain or conflict"| AG
-  TG --> AG
-  AG <--> LLM
-  AG <--> RB
-  AG <--> MEM
-  FT <--> MEM
-  SM -.-> EMB
-  SM -.-> LLM
-  MEM -.-> EMB
-  AG --> VF
-  VF -->|"violation"| AG
-  VF --> J
-  VF --> AU
-  J --> RP
-  UI -.->|"corrections"| MEM
-
-  classDef blue fill:#a5d8ff,stroke:#1971c2,color:#1e1e1e
-  classDef violet fill:#d0bfff,stroke:#6741d9,color:#1e1e1e
-  classDef yellow fill:#ffec99,stroke:#f08c00,color:#1e1e1e
-  classDef green fill:#b2f2bb,stroke:#2f9e44,color:#1e1e1e
-  classDef red fill:#ffc9c9,stroke:#e03131,color:#1e1e1e
-  classDef cyan fill:#99e9f2,stroke:#0c8599,color:#1e1e1e
-  classDef orange fill:#ffd8a8,stroke:#e8590c,color:#1e1e1e
-  classDef pink fill:#fcc2d7,stroke:#c2255c,color:#1e1e1e
-```
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/5739b493-04ec-4749-a45e-7ed56f2f3102" alt="System architecture" width="1037">
+</p>
 
 **Deployment view.** One `docker compose up`, no internet required after the model weights are pulled.
 
-```mermaid
-%%{init: {"look": "handDrawn", "handDrawnSeed": 4, "fontFamily": "virgil, excalifont, segoe print, bradley hand, chalkboard se, comic sans ms, cursive"}}%%
-flowchart LR
-  USER(["Accountant or evaluator"]):::pink
-  SCRIPT(["Evaluation script"]):::pink
-  subgraph HOST["Single machine: laptop or one GPU box"]
-    subgraph DC["docker compose"]
-      UIc["ui<br/>Streamlit :8501"]:::cyan
-      APIc["api<br/>FastAPI + LangGraph + LightGBM :8000"]:::green
-      LLMc["llm<br/>llama-server on CPU (GGUF 4-bit)<br/>or vLLM on CUDA"]:::yellow
-    end
-    VOL[("volumes<br/>model weights, FAISS index, audit logs")]:::orange
-  end
-  USER --> UIc --> APIc
-  SCRIPT --> APIc
-  APIc -->|"OpenAI-compatible HTTP"| LLMc
-  APIc --- VOL
-  LLMc --- VOL
-
-  classDef green fill:#b2f2bb,stroke:#2f9e44,color:#1e1e1e
-  classDef yellow fill:#ffec99,stroke:#f08c00,color:#1e1e1e
-  classDef cyan fill:#99e9f2,stroke:#0c8599,color:#1e1e1e
-  classDef orange fill:#ffd8a8,stroke:#e8590c,color:#1e1e1e
-  classDef pink fill:#fcc2d7,stroke:#c2255c,color:#1e1e1e
-```
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/23879bff-ca59-41c9-a50a-26e47d1ae044" alt="Deployment view" width="100%">
+</p>
 
 ---
 
@@ -604,33 +410,9 @@ flowchart LR
 
 **Runtime flow, with the data artifact each stage produces**
 
-```mermaid
-%%{init: {"look": "handDrawn", "handDrawnSeed": 4, "fontFamily": "virgil, excalifont, segoe print, bradley hand, chalkboard se, comic sans ms, cursive"}}%%
-flowchart TB
-  A[/"1 · workbook"/]:::orange --> B["Loader<br/>header detection, sheet merge"]:::blue
-  B --> C[/"2 · raw table"/]:::orange
-  C --> D["Schema Mapper"]:::blue --> E[/"3 · canonical rows<br/>+ mapping report"/]:::orange
-  E --> F["Normalizer + validators"]:::blue --> G[/"4 · typed rows<br/>+ data-quality flags"/]:::orange
-  G --> H["Perspective Resolver"]:::violet
-  G --> TG["Transaction Graph"]:::violet
-  H --> I["Evidence Extractor"]:::violet
-  TG --> I
-  I --> J[/"5 · evidence cards"/]:::orange
-  J --> K["Fast tier"]:::green --> L[/"6 · label distribution<br/>+ calibrated confidence"/]:::orange
-  L --> M{"Gate"}
-  M -->|"accept"| N["Verifier"]:::red
-  M -->|"escalate"| O["Reasoning agent + SLM"]:::yellow --> P[/"7 · axes, label,<br/>cited evidence"/]:::orange
-  P --> N
-  N --> Q[/"8 · predictions.json and .xlsx<br/>+ audit.jsonl"/]:::cyan
-
-  classDef blue fill:#a5d8ff,stroke:#1971c2,color:#1e1e1e
-  classDef violet fill:#d0bfff,stroke:#6741d9,color:#1e1e1e
-  classDef yellow fill:#ffec99,stroke:#f08c00,color:#1e1e1e
-  classDef green fill:#b2f2bb,stroke:#2f9e44,color:#1e1e1e
-  classDef red fill:#ffc9c9,stroke:#e03131,color:#1e1e1e
-  classDef cyan fill:#99e9f2,stroke:#0c8599,color:#1e1e1e
-  classDef orange fill:#ffd8a8,stroke:#e8590c,color:#1e1e1e
-```
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/86a80988-f651-4fd7-990f-7babdd3d4094" alt="Runtime data flow" width="390">
+</p>
 
 Only the evidence card, the narration and linked-row summaries reach the model, never the whole workbook. That keeps prompts short (a few hundred tokens per row) and keeps unrelated personal data out of the model's context.
 
@@ -638,33 +420,9 @@ Only the evidence card, the narration and linked-row summaries reach the model, 
 
 The dataset arrives unlabeled, so Vouchsafe manufactures its own training signal and keeps a small, hand-labeled gold set strictly for measurement.
 
-```mermaid
-%%{init: {"look": "handDrawn", "handDrawnSeed": 4, "fontFamily": "virgil, excalifont, segoe print, bradley hand, chalkboard se, comic sans ms, cursive"}}%%
-flowchart LR
-  U[/"Unlabeled rows<br/>(provided dataset)"/]:::orange --> LF["Labeling functions<br/>from the rulebook"]:::blue
-  U --> T["SLM teacher<br/>reasoning mode, 5 samples per row"]:::yellow
-  LF --> AGG["Label aggregation<br/>agreement + verifier"]:::violet
-  T --> AGG
-  AGG -->|"high agreement"| SIL[/"Silver labels"/]:::orange
-  AGG -->|"disagreement"| AL["Active selection<br/>most informative rows"]:::violet
-  AL --> H["Hand labeling<br/>with the annotation guide"]:::pink
-  H --> GOLD[/"Gold set<br/>dev and test splits"/]:::red
-  SYN["Synthetic generator<br/>rare classes, perturbations,<br/>contrast sets"]:::blue --> SYND[/"Synthetic data"/]:::orange
-  SIL --> TR["Train LightGBM student"]:::green
-  SYND --> TR
-  TR --> CAL["Calibrate + pick gate threshold<br/>on gold dev"]:::green
-  GOLD --> CAL
-  GOLD --> EV["Final scorecard<br/>on gold test only"]:::red
-  SIL -.->|"stretch"| QL["QLoRA distillation<br/>into a smaller SLM"]:::yellow
-
-  classDef blue fill:#a5d8ff,stroke:#1971c2,color:#1e1e1e
-  classDef violet fill:#d0bfff,stroke:#6741d9,color:#1e1e1e
-  classDef yellow fill:#ffec99,stroke:#f08c00,color:#1e1e1e
-  classDef green fill:#b2f2bb,stroke:#2f9e44,color:#1e1e1e
-  classDef red fill:#ffc9c9,stroke:#e03131,color:#1e1e1e
-  classDef orange fill:#ffd8a8,stroke:#e8590c,color:#1e1e1e
-  classDef pink fill:#fcc2d7,stroke:#c2255c,color:#1e1e1e
-```
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/f0ad2cf3-ea91-4263-b85c-68ce7e60a89c" alt="Learning flow: bootstrapping without labels" width="100%">
+</p>
 
 Synthetic data is generated from the same decision table the classifier uses, so scoring the system on it would be circular. It is used only for rare-class coverage and robustness testing. **Headline numbers come from the hand-labeled gold test split, drawn from the real dataset.**
 
@@ -674,41 +432,9 @@ Synthetic data is generated from the same decision table the classifier uses, so
 
 Only escalated rows enter the agent. It is a **bounded LangGraph state machine**, not an open-ended loop: at most two reasoning rounds and four tool calls per row, and every step is traced into the audit log.
 
-```mermaid
-%%{init: {"look": "handDrawn", "handDrawnSeed": 4, "fontFamily": "virgil, excalifont, segoe print, bradley hand, chalkboard se, comic sans ms, cursive"}}%%
-stateDiagram-v2
-  direction TB
-  state "Build context" as CTX
-  state "Axis reasoning by the SLM" as AX
-  state check <<choice>>
-  state "Targeted disambiguation" as DIS
-  state "Self-consistency vote" as VOTE
-  state "Verify and calibrate" as VER
-  state "Flag for review" as REV
-
-  [*] --> CTX
-  CTX --> AX : evidence card, linked rows, 3 similar cases, rulebook cards
-  AX --> check : six axes + direct label as schema-constrained JSON
-  check --> VER : axes and label agree, no violation
-  check --> DIS : conflict, first or second round
-  check --> VOTE : conflict after two rounds
-  DIS --> AX : re-ask only the disputed axis, with tool results
-  VOTE --> VER : 4 of 5 samples agree
-  VOTE --> REV : split vote
-  REV --> VER : best label, needs_review set
-  VER --> [*]
-
-  classDef ai fill:#ffec99,stroke:#f08c00,color:#1e1e1e
-  classDef tool fill:#d0bfff,stroke:#6741d9,color:#1e1e1e
-  classDef ok fill:#b2f2bb,stroke:#2f9e44,color:#1e1e1e
-  classDef warn fill:#ffc9c9,stroke:#e03131,color:#1e1e1e
-  class AX ai
-  class VOTE ai
-  class CTX tool
-  class DIS tool
-  class VER ok
-  class REV warn
-```
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/2f72458f-9bb0-4e66-a660-8563d11bbdf2" alt="Agentic workflow for escalated rows" width="691">
+</p>
 
 **Tools available to the agent** (all read-only and deterministic)
 
@@ -775,35 +501,9 @@ stateDiagram-v2
 
 The plan is ordered so that **a complete, working classifier exists by Phase 2**. Every later phase adds accuracy, speed or product polish on top of something that already runs end to end.
 
-```mermaid
-%%{init: {"look": "handDrawn", "handDrawnSeed": 4, "fontFamily": "virgil, excalifont, segoe print, bradley hand, chalkboard se, comic sans ms, cursive"}}%%
-flowchart TB
-  subgraph CORE["Core: a working, measured classifier"]
-    direction LR
-    P0["P0 · Pre-event prep<br/>weights pulled, rulebook<br/>and annotation guide written"]:::gray
-    P1["P1 · Ingestion<br/>loader, mapper,<br/>normalizer, perspective"]:::blue
-    P2["P2 · SLM classifier = MVP<br/>evidence cards, axis prompt,<br/>constrained JSON"]:::yellow
-    P3["P3 · Evaluation<br/>gold set, harness,<br/>baselines"]:::red
-    P0 --> P1 --> P2 --> P3
-  end
-  subgraph BOOST["Boosters: speed, accuracy, product"]
-    direction LR
-    P4["P4 · Cascade<br/>teacher labels, LightGBM,<br/>calibration, gate"]:::green
-    P5["P5 · Agent + graph<br/>tools, verifier,<br/>self-consistency"]:::violet
-    P6["P6 · Product<br/>API, review console,<br/>docker compose"]:::cyan
-    P7["P7 · Stretch<br/>QLoRA distillation,<br/>bake-off, XML export"]:::gray
-    P4 --> P5 --> P6 --> P7
-  end
-  CORE --> BOOST
-
-  classDef blue fill:#a5d8ff,stroke:#1971c2,color:#1e1e1e
-  classDef violet fill:#d0bfff,stroke:#6741d9,color:#1e1e1e
-  classDef yellow fill:#ffec99,stroke:#f08c00,color:#1e1e1e,stroke-width:3px
-  classDef green fill:#b2f2bb,stroke:#2f9e44,color:#1e1e1e
-  classDef red fill:#ffc9c9,stroke:#e03131,color:#1e1e1e
-  classDef cyan fill:#99e9f2,stroke:#0c8599,color:#1e1e1e
-  classDef gray fill:#e9ecef,stroke:#868e96,color:#1e1e1e
-```
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/882562c6-bdba-435e-84b2-43165e99c356" alt="Implementation phases" width="100%">
+</p>
 
 | Phase | Deliverable | Demo-able checkpoint |
 |---|---|---|
@@ -889,28 +589,9 @@ docker compose up    # API on :8000, review console on :8501
 
 ## 18. Future Scope / Scalability
 
-```mermaid
-%%{init: {"look": "handDrawn", "handDrawnSeed": 4, "fontFamily": "virgil, excalifont, segoe print, bradley hand, chalkboard se, comic sans ms, cursive"}}%%
-flowchart LR
-  SRC["VYOM+ invoice<br/>extraction (upstream)"]:::blue --> GW["API gateway"]:::cyan
-  GW --> Q[("Job queue")]:::orange
-  Q --> W["Fast-tier workers<br/>CPU, horizontally scaled"]:::green
-  W -->|"escalations only"| GPU["vLLM pool on GPU<br/>continuous batching, prefix cache"]:::yellow
-  W --> DB[("Results + audit store")]:::orange
-  GPU --> DB
-  DB --> REV["Review console"]:::pink
-  REV -->|"corrections"| MEM[("Per-tenant<br/>exemplar memory")]:::violet
-  MEM --> W
-  DB --> POST["Voucher posting<br/>and ledger export"]:::cyan
-
-  classDef blue fill:#a5d8ff,stroke:#1971c2,color:#1e1e1e
-  classDef violet fill:#d0bfff,stroke:#6741d9,color:#1e1e1e
-  classDef yellow fill:#ffec99,stroke:#f08c00,color:#1e1e1e
-  classDef green fill:#b2f2bb,stroke:#2f9e44,color:#1e1e1e
-  classDef cyan fill:#99e9f2,stroke:#0c8599,color:#1e1e1e
-  classDef orange fill:#ffd8a8,stroke:#e8590c,color:#1e1e1e
-  classDef pink fill:#fcc2d7,stroke:#c2255c,color:#1e1e1e
-```
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/9dc59add-c45c-4c3c-9490-af31c494bec4" alt="Scalability architecture" width="100%">
+</p>
 
 **Scaling.** The API is stateless, so it scales horizontally. The fast tier runs on cheap CPU workers, and only escalations reach the GPU pool, where vLLM batches requests and reuses the shared prompt prefix. Per-tenant exemplar memory lets each client firm's conventions apply without retraining.
 
